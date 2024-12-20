@@ -8,12 +8,12 @@ variables:
   buildConfiguration: 'Release'
 
 steps:
-# Step 1: Install .NET 8.0 SDK
+# Step 1: Install .NET SDK
 - task: UseDotNet@2
-  displayName: 'Install .NET 8.0 SDK'
+  displayName: 'Install .NET SDK'
   inputs:
     packageType: 'sdk'
-    version: '8.0.x' # Installs the latest .NET 8.0 SDK available
+    version: '8.0.x' # Update based on your target framework
 
 # Step 2: Restore dependencies
 - script: dotnet restore
@@ -27,14 +27,24 @@ steps:
 - script: dotnet publish --configuration $(buildConfiguration) --output $(Build.ArtifactStagingDirectory)
   displayName: 'Publish the project'
 
-# Step 5: Publish the build artifacts
+# Step 5: Archive the project into a ZIP file
+- task: ArchiveFiles@2
+  displayName: 'Archive published files into a ZIP'
+  inputs:
+    rootFolderOrFile: '$(Build.ArtifactStagingDirectory)'
+    includeRootFolder: false
+    archiveType: 'zip'
+    archiveFile: '$(Build.ArtifactStagingDirectory)/WebApp.zip'
+    replaceExistingArchive: true
+
+# Step 6: Publish the build artifacts
 - task: PublishBuildArtifacts@1
   displayName: 'Publish build artifacts'
   inputs:
     PathtoPublish: '$(Build.ArtifactStagingDirectory)'
     ArtifactName: 'drop'
 
-# Step 6: Deploy to Azure App Service
+# Step 7: Deploy to Azure App Service
 - task: AzureRmWebAppDeployment@4
   displayName: 'Deploy to Azure App Service'
   inputs:
@@ -42,4 +52,4 @@ steps:
     azureSubscription: 'Visual Studio Professional Subscription(4)(5942bc94-5c1a-42d5-977c-e8656aac87c4)'
     appType: 'webApp'
     WebAppName: 'mytestdata'
-    packageForLinux: '$(Build.ArtifactStagingDirectory)/**/*.zip'
+    packageForLinux: '$(Build.ArtifactStagingDirectory)/WebApp.zip'

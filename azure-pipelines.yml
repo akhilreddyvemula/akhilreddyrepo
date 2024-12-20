@@ -1,0 +1,41 @@
+trigger:
+- master
+
+pool:
+  vmImage: ubuntu-latest
+
+variables:
+  buildConfiguration: 'Release'
+
+steps:
+# Step 1: Restore dependencies
+- task: UseDotNet@2
+  displayName: 'Install .NET Core SDK'
+  inputs:
+    packageType: 'sdk'
+    version: '6.x' # Adjust the version based on your project requirements
+
+- script: dotnet restore
+  displayName: 'Restore dependencies'
+
+# Step 2: Build the project
+- script: dotnet build --configuration $(buildConfiguration)
+  displayName: 'Build the project'
+
+# Step 3: Publish the project
+- script: dotnet publish --configuration $(buildConfiguration) --output $(Build.ArtifactStagingDirectory)
+  displayName: 'Publish the project'
+
+# Step 4: Publish the build artifacts
+- task: PublishBuildArtifacts@1
+  displayName: 'Publish build artifacts'
+  inputs:
+    PathtoPublish: '$(Build.ArtifactStagingDirectory)'
+    ArtifactName: 'drop'
+
+# Step 5: Deploy to Azure App Service
+- task: AzureRmWebAppDeployment@4
+  displayName: 'Deploy to Azure App Service'
+  inputs:
+    ConnectionType: 'AzureRM'
+   

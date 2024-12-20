@@ -8,44 +8,21 @@ variables:
   buildConfiguration: 'Release'
 
 steps:
-# Install the required .NET SDK version
 - task: UseDotNet@2
   inputs:
     packageType: 'sdk'
-    version: '6.x' # Update as per your project requirements
+    version: '8.0.x'
 
-# Restore dependencies
 - script: dotnet restore
   displayName: 'Restore Dependencies'
 
-# Build the application
-- script: dotnet build --configuration $(buildConfiguration) --no-restore
-  displayName: 'Build Application'
+- script: dotnet build --configuration $(buildConfiguration)
+  displayName: 'Build Project'
 
-# Publish the application
 - script: dotnet publish --configuration $(buildConfiguration) --output $(Build.ArtifactStagingDirectory)
-  displayName: 'Publish Application'
+  displayName: 'Publish Project'
 
-# Zip the published output
-- task: ArchiveFiles@2
-  inputs:
-    rootFolderOrFile: '$(Build.ArtifactStagingDirectory)'
-    includeRootFolder: false
-    archiveType: 'zip'
-    archiveFile: '$(Build.ArtifactStagingDirectory)/WebApp.zip'
-    replaceExistingArchive: true
-
-# Publish the zip as a build artifact
 - task: PublishBuildArtifacts@1
   inputs:
     PathtoPublish: '$(Build.ArtifactStagingDirectory)'
     ArtifactName: 'drop'
-
-# Deploy to Azure App Service
-- task: AzureRmWebAppDeployment@4
-  inputs:
-    ConnectionType: 'AzureRM'
-    azureSubscription: 'Visual Studio Professional Subscription(7)(5942bc94-5c1a-42d5-977c-e8656aac87c4)'
-    appType: 'webApp'
-    WebAppName: 'jbj'
-    package: '$(Build.ArtifactStagingDirectory)/WebApp.zip'

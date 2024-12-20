@@ -1,0 +1,54 @@
+trigger:
+- master
+
+pool:
+  vmImage: 'windows-latest'
+
+variables:
+  solution: '**/*.sln'
+  buildPlatform: 'Any CPU'
+  buildConfiguration: 'Release'
+
+steps:
+# Step 1: Install NuGet (Optional if the agent has it pre-installed)
+- task: NuGetToolInstaller@1
+  displayName: 'Install NuGet Tool'
+
+# Step 2: Restore NuGet packages
+- task: NuGetCommand@2
+  displayName: 'Restore NuGet Packages'
+  inputs:
+    restoreSolution: '$(solution)'
+
+# Step 3: Build the solution
+- task: VSBuild@1
+  displayName: 'Build Solution'
+  inputs:
+    solution: '$(solution)'
+    msbuildArgs: '/p:DeployOnBuild=true /p:WebPublishMethod=Package /p:PackageAsSingleFile=true /p:SkipInvalidConfigurations=true /p:DesktopBuildPackageLocation="$(Build.ArtifactStagingDirectory)\WebApp.zip" /p:DeployIisAppPath="Default Web Site"'
+    platform: '$(buildPlatform)'
+    configuration: '$(buildConfiguration)'
+
+# Step 4: Run Unit Tests
+- task: VSTest@2
+  displayName: 'Run Tests'
+  inputs:
+    platform: '$(buildPlatform)'
+    configuration: '$(buildConfiguration)'
+
+# Step 5: Publish build artifacts (WebApp.zip)
+- task: PublishBuildArtifacts@1
+  displayName: 'Publish Build Artifacts'
+  inputs:
+    PathtoPublish: '$(Build.ArtifactStagingDirectory)'
+    ArtifactName: 'drop'
+
+# Step 6: Deploy to Azure App Service
+- task: AzureRmWebAppDeployment@4
+  displayName: 'Deploy to Azure App Service'
+  inputs:
+    ConnectionType: 'AzureRM'
+    azureSubscription: 'Visual Studio Professional Subscription(6)(5942bc94-5c1a-42d5-977c-e8656aac87c4)'
+    appType: 'webApp'
+    WebAppName: 'myapideployee'
+    packageForLinux: '$(Build.ArtifactStagingDirectory)\WebApp.zip'
